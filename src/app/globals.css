@@ -1,0 +1,730 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   ATTENDOS DESIGN SYSTEM V3
+   Premium, Distinctive, Institution-Grade
+   ============================================ */
+
+@layer base {
+  :root {
+    /* Core Palette - Warm Coral/Amber Primary (Non-Blue) */
+    --background: 40 15% 98%;
+    --foreground: 30 10% 12%;
+
+    --card: 40 20% 99%;
+    --card-foreground: 30 10% 12%;
+
+    --popover: 40 20% 99%;
+    --popover-foreground: 30 10% 12%;
+
+    /* Signature Coral/Amber Accent */
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 25% 94%;
+    --secondary-foreground: 30 10% 12%;
+
+    --muted: 40 20% 94%;
+    --muted-foreground: 30 10% 45%;
+
+    --accent: 340 82% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 24 95% 53%;
+
+    --radius: 0.75rem;
+
+    /* AttendOS Semantic Colors */
+    --success: 152 76% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 200 80% 50%;
+    --info-foreground: 0 0% 100%;
+
+    /* Surface Hierarchy */
+    --surface-0: 40 20% 100%;
+    --surface-1: 40 18% 98%;
+    --surface-2: 40 15% 96%;
+    --surface-3: 40 12% 93%;
+
+    /* Elevation Shadows */
+    --shadow-sm: 0 1px 2px rgba(30, 20, 10, 0.04);
+    --shadow-md: 0 4px 12px rgba(30, 20, 10, 0.06);
+    --shadow-lg: 0 12px 32px rgba(30, 20, 10, 0.08);
+    --shadow-xl: 0 24px 48px rgba(30, 20, 10, 0.12);
+  }
+
+  .dark {
+    --background: 25 15% 6%;
+    --foreground: 40 20% 95%;
+
+    --card: 25 15% 8%;
+    --card-foreground: 40 20% 95%;
+
+    --popover: 25 15% 8%;
+    --popover-foreground: 40 20% 95%;
+
+    --primary: 24 95% 58%;
+    --primary-foreground: 25 15% 6%;
+
+    --secondary: 25 12% 12%;
+    --secondary-foreground: 40 20% 95%;
+
+    --muted: 25 12% 15%;
+    --muted-foreground: 40 15% 55%;
+
+    --accent: 340 85% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 25 12% 15%;
+    --input: 25 12% 15%;
+    --ring: 24 95% 58%;
+
+    /* Surface Hierarchy - Dark */
+    --surface-0: 25 15% 4%;
+    --surface-1: 25 15% 6%;
+    --surface-2: 25 14% 9%;
+    --surface-3: 25 12% 12%;
+
+    /* Elevation Shadows - Dark */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.6);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+
+  /* Typography Scale */
+  h1 {
+    @apply text-3xl font-semibold tracking-tight sm:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  h4 {
+    @apply text-lg font-medium;
+  }
+
+  /* Focus States */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+
+  /* ============================================
+     CARD SYSTEM - Layered, Depth-Aware
+     ============================================ */
+  .card {
+    @apply relative bg-card rounded-xl border border-border/50;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .card-elevated {
+    @apply card;
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer;
+  }
+
+  .card-interactive:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: hsl(var(--primary) / 0.3);
+    transform: translateY(-1px);
+  }
+
+  /* ============================================
+     SURFACE SYSTEM - Institution Grade
+     ============================================ */
+  .surface-0 {
+    background: hsl(var(--surface-0));
+  }
+
+  .surface-1 {
+    background: hsl(var(--surface-1));
+  }
+
+  .surface-2 {
+    background: hsl(var(--surface-2));
+  }
+
+  .surface-3 {
+    background: hsl(var(--surface-3));
+  }
+
+  /* ============================================
+     STATUS INDICATORS
+     ============================================ */
+  .status-present {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+    background: hsl(152 76% 40% / 0.1);
+    color: hsl(152 76% 35%);
+  }
+
+  .status-late {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+    background: hsl(38 92% 50% / 0.1);
+    color: hsl(38 92% 40%);
+  }
+
+  .status-absent {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+    background: hsl(0 84% 60% / 0.1);
+    color: hsl(0 84% 50%);
+  }
+
+  .status-active {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+    background: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+  }
+
+  /* Status Dot */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot-present {
+    @apply bg-emerald-500;
+  }
+
+  .status-dot-late {
+    @apply bg-amber-500;
+  }
+
+  .status-dot-absent {
+    @apply bg-red-500;
+  }
+
+  .status-dot-active {
+    @apply bg-primary animate-pulse;
+  }
+
+  /* ============================================
+     DATA ROW COMPONENT
+     ============================================ */
+  .data-row {
+    @apply flex items-center gap-4 px-4 py-3 rounded-lg transition-colors;
+  }
+
+  .data-row:hover {
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  .data-row-selected {
+    background: hsl(var(--primary) / 0.08);
+    border-left: 3px solid hsl(var(--primary));
+  }
+
+  /* ============================================
+     FORM ELEMENTS
+     ============================================ */
+  .input-field {
+    @apply w-full h-11 px-4 rounded-lg bg-background border border-input text-sm;
+    @apply transition-all duration-200;
+    @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+    @apply placeholder:text-muted-foreground/60;
+  }
+
+  .input-field-lg {
+    @apply input-field h-12 text-base;
+  }
+
+  .label {
+    @apply text-sm font-medium text-foreground mb-1.5 block;
+  }
+
+  .label-helper {
+    @apply text-xs text-muted-foreground mt-1;
+  }
+
+  /* ============================================
+     BUTTON VARIANTS
+     ============================================ */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn h-10 px-5 bg-primary text-primary-foreground;
+    @apply hover:brightness-110 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn h-10 px-5 bg-secondary text-secondary-foreground;
+    @apply hover:bg-secondary/80;
+  }
+
+  .btn-ghost {
+    @apply btn h-10 px-4 text-foreground;
+    @apply hover:bg-muted;
+  }
+
+  .btn-destructive {
+    @apply btn h-10 px-5 bg-destructive text-destructive-foreground;
+    @apply hover:brightness-110;
+  }
+
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+
+  .btn-sm {
+    @apply h-8 px-3 text-sm;
+  }
+
+  .btn-icon {
+    @apply h-10 w-10 p-0;
+  }
+
+  /* ============================================
+     PROOF/METHOD CHIPS
+     ============================================ */
+  .proof-chip {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border;
+  }
+
+  .proof-qr {
+    @apply proof-chip bg-violet-50 text-violet-700 border-violet-200;
+  }
+
+  .dark .proof-qr {
+    @apply bg-violet-950/50 text-violet-300 border-violet-800;
+  }
+
+  .proof-geo {
+    @apply proof-chip bg-emerald-50 text-emerald-700 border-emerald-200;
+  }
+
+  .dark .proof-geo {
+    @apply bg-emerald-950/50 text-emerald-300 border-emerald-800;
+  }
+
+  .proof-kiosk {
+    @apply proof-chip bg-blue-50 text-blue-700 border-blue-200;
+  }
+
+  .dark .proof-kiosk {
+    @apply bg-blue-950/50 text-blue-300 border-blue-800;
+  }
+
+  .proof-manual {
+    @apply proof-chip bg-gray-100 text-gray-700 border-gray-200;
+  }
+
+  .dark .proof-manual {
+    @apply bg-gray-800/50 text-gray-300 border-gray-700;
+  }
+
+  /* ============================================
+     EMPTY STATES
+     ============================================ */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-16 h-16 mb-4 text-muted-foreground/30;
+  }
+
+  .empty-state-title {
+    @apply text-lg font-semibold text-foreground mb-1;
+  }
+
+  .empty-state-description {
+    @apply text-sm text-muted-foreground mb-6 max-w-sm;
+  }
+
+  /* ============================================
+     LOADING STATES
+     ============================================ */
+  .skeleton {
+    @apply relative overflow-hidden bg-muted/50 rounded;
+  }
+
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(90deg,
+        transparent,
+        hsl(var(--muted) / 0.4),
+        transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* ============================================
+     PAGE LAYOUT
+     ============================================ */
+  .page-header {
+    @apply mb-8;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  .page-subtitle {
+    @apply text-muted-foreground mt-1;
+  }
+
+  .page-actions {
+    @apply flex items-center gap-3;
+  }
+
+  /* ============================================
+     NAVIGATION
+     ============================================ */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+    @apply text-muted-foreground hover:text-foreground hover:bg-muted/50;
+  }
+
+  .nav-item-active {
+    @apply nav-item text-foreground bg-muted;
+  }
+
+  .nav-section-title {
+    @apply px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+
+  /* ============================================
+     TABLES/DATA GRIDS
+     ============================================ */
+  .table-header {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wider;
+  }
+
+  .table-cell {
+    @apply py-3 px-4 text-sm;
+  }
+
+  .table-row {
+    @apply border-b border-border/50 transition-colors;
+  }
+
+  .table-row:hover {
+    @apply bg-muted/30;
+  }
+
+  /* ============================================
+     DRAWER/PANEL
+     ============================================ */
+  .drawer-overlay {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-40;
+  }
+
+  .drawer-content {
+    @apply fixed right-0 top-0 h-full w-full max-w-md bg-background z-50;
+    @apply shadow-2xl border-l border-border;
+  }
+
+  .drawer-header {
+    @apply flex items-center justify-between px-6 py-4 border-b border-border;
+  }
+
+  .drawer-body {
+    @apply px-6 py-4 overflow-y-auto;
+    height: calc(100% - 130px);
+  }
+
+  .drawer-footer {
+    @apply flex items-center gap-3 px-6 py-4 border-t border-border bg-muted/30;
+  }
+
+  /* ============================================
+     METRICS/STATS
+     ============================================ */
+  .stat-card {
+    @apply card p-5;
+  }
+
+  .stat-value {
+    @apply text-2xl font-semibold tabular-nums;
+  }
+
+  .stat-label {
+    @apply text-sm text-muted-foreground mt-1;
+  }
+
+  .stat-change {
+    @apply text-xs font-medium mt-2;
+  }
+
+  .stat-change-positive {
+    @apply stat-change text-emerald-600;
+  }
+
+  .stat-change-negative {
+    @apply stat-change text-red-600;
+  }
+
+  /* ============================================
+     AVATAR
+     ============================================ */
+  .avatar {
+    @apply relative inline-flex items-center justify-center overflow-hidden rounded-full bg-muted;
+  }
+
+  .avatar-sm {
+    @apply w-8 h-8 text-xs;
+  }
+
+  .avatar-md {
+    @apply w-10 h-10 text-sm;
+  }
+
+  .avatar-lg {
+    @apply w-12 h-12 text-base;
+  }
+
+  .avatar-xl {
+    @apply w-16 h-16 text-lg;
+  }
+
+  .avatar-initials {
+    @apply font-medium text-muted-foreground;
+  }
+
+  .avatar-status {
+    @apply absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background;
+  }
+
+  /* ============================================
+     BADGE
+     ============================================ */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-default {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .badge-primary {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .badge-success {
+    @apply bg-emerald-100 text-emerald-700;
+  }
+
+  .badge-warning {
+    @apply bg-amber-100 text-amber-700;
+  }
+
+  .badge-error {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .dark .badge-success {
+    @apply bg-emerald-950/50 text-emerald-300;
+  }
+
+  .dark .badge-warning {
+    @apply bg-amber-950/50 text-amber-300;
+  }
+
+  .dark .badge-error {
+    @apply bg-red-950/50 text-red-300;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Smooth scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+
+  /* Subtle pattern overlay */
+  .pattern-dots {
+    background-image: radial-gradient(circle, hsl(var(--muted)) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Focus ring utility */
+  .ring-focus {
+    @apply focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background focus:outline-none;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-subtle {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
