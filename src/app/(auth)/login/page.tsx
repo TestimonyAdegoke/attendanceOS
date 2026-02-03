@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
@@ -78,34 +78,37 @@ export default function LoginPage() {
 
   if (magicLinkSent) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
-      >
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-          <Mail className="w-8 h-8 text-primary" />
-        </div>
-        <h1 className="text-2xl font-bold mb-2">Check your email</h1>
-        <p className="text-muted-foreground mb-6">
-          We&apos;ve sent a magic link to <strong>{email}</strong>. 
-          Click the link in the email to sign in instantly.
-        </p>
-        <p className="text-sm text-muted-foreground mb-6">
-          The link will expire in 1 hour. Didn&apos;t receive it? Check your spam folder.
-        </p>
-        <Button variant="outline" onClick={() => setMagicLinkSent(false)}>
-          Try a different method
-        </Button>
-      </motion.div>
+      <Suspense fallback={<div />}> 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <Mail className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Check your email</h1>
+          <p className="text-muted-foreground mb-6">
+            We&apos;ve sent a magic link to <strong>{email}</strong>. 
+            Click the link in the email to sign in instantly.
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            The link will expire in 1 hour. Didn&apos;t receive it? Check your spam folder.
+          </p>
+          <Button variant="outline" onClick={() => setMagicLinkSent(false)}>
+            Try a different method
+          </Button>
+        </motion.div>
+      </Suspense>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
+    <Suspense fallback={<div />}> 
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold">Welcome back</h1>
         <p className="mt-2 text-muted-foreground">
@@ -212,5 +215,14 @@ export default function LoginPage() {
         </p>
       </form>
     </motion.div>
+    </Suspense>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div />}>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -44,11 +44,12 @@ export default function DevicesPage() {
       .single();
 
     if (membership) {
-      setOrgId(membership.org_id as string);
-      const { data } = await supabase
+      const typedMembership = membership as { org_id: string };
+      setOrgId(typedMembership.org_id);
+      const { data } = await (supabase as any)
         .from("devices")
         .select("*, locations(name)")
-        .eq("org_id", membership.org_id)
+        .eq("org_id", typedMembership.org_id)
         .order("name");
 
       setDevices((data as Device[]) || []);

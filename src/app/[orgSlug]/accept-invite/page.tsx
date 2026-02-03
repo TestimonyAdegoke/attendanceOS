@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import type { Database } from "@/types/database";
 
 interface InviteData {
   id: string;
@@ -110,13 +109,9 @@ export default function AcceptInvitePage() {
     setProcessing(true);
     const supabase = createClient();
 
-    // Call the accept_invite function
-    const rpcArgs: Database["public"]["Functions"]["accept_invite"]["Args"] = {
-      p_token: token,
-    };
-
-    const { data, error: acceptError } = await supabase
-      .rpc("accept_invite", rpcArgs);
+    // Call the accept_invite function (cast to any to work around typing issue)
+    const { data, error: acceptError } = await (supabase as any)
+      .rpc("accept_invite", { p_token: token });
 
     if (acceptError) {
       setError("Failed to accept invite. Please try again.");

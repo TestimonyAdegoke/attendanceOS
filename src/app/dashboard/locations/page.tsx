@@ -53,16 +53,17 @@ export default function LocationsPage() {
       .single();
 
     if (membership) {
-      setOrgId((membership as any).org_id);
-      const { data } = await supabase
+      const typedMembership = membership as { org_id: string };
+      setOrgId(typedMembership.org_id);
+      const { data } = await (supabase as any)
         .from("locations")
         .select("*, geofences(*)")
-        .eq("org_id", (membership as any).org_id)
+        .eq("org_id", typedMembership.org_id)
         .order("name");
 
-      const enhancedData = data?.map(loc => ({
+      const enhancedData = (data as any[] | null)?.map((loc: any) => ({
         ...loc,
-        active_sessions_count: Math.floor(Math.random() * 3)
+        active_sessions_count: Math.floor(Math.random() * 3),
       }));
 
       setLocations((enhancedData as Location[]) || []);

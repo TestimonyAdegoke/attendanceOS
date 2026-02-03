@@ -51,11 +51,12 @@ export default function SessionsPage() {
       .single();
 
     if (membership) {
-      setOrgId((membership as any).org_id as string);
-      let query = supabase
+      const typedMembership = membership as { org_id: string };
+      setOrgId(typedMembership.org_id);
+      let query = (supabase as any)
         .from("sessions")
         .select("*, locations(name)")
-        .eq("org_id", (membership as any).org_id)
+        .eq("org_id", typedMembership.org_id)
         .order("session_date", { ascending: filter === "upcoming" });
 
       const today = new Date().toISOString().split("T")[0];
@@ -67,9 +68,9 @@ export default function SessionsPage() {
 
       const { data } = await query.limit(50);
 
-      const enhancedData = data?.map(session => ({
+      const enhancedData = (data as any[] | null)?.map((session: any) => ({
         ...session,
-        attendee_count: Math.floor(Math.random() * 50) + 10
+        attendee_count: Math.floor(Math.random() * 50) + 10,
       }));
 
       setSessions((enhancedData as Session[]) || []);

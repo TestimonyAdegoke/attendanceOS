@@ -121,8 +121,8 @@ export async function POST(
         continue;
       }
 
-      // Create invite
-      const { error: insertError } = await supabase
+      // Create invite (cast client to any to work around incomplete Supabase typings for invites table)
+      const { error: insertError } = await (supabase as any)
         .from("invites")
         .insert({
           org_id: orgId,

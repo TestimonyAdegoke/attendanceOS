@@ -105,13 +105,13 @@ export function DeviceDialog({
 
     let error;
     if (device) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from("devices")
         .update(deviceData)
         .eq("id", device.id);
       error = updateError;
     } else {
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from("devices")
         .insert(deviceData);
       error = insertError;

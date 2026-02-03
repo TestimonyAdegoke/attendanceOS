@@ -67,16 +67,17 @@ export default function KioskPage() {
 
   const loadDeviceInfo = async () => {
     const supabase = createClient();
-    const { data: device } = await supabase
+    const { data: device } = await (supabase as any)
       .from("devices")
       .select("*, locations(*)")
       .eq("id", deviceId)
       .single();
 
     if (device) {
-      setLocationId(device.location_id);
-      setOrgId(device.org_id);
-      loadCurrentSession(device.org_id, device.location_id);
+      const typedDevice = device as { location_id: string; org_id: string };
+      setLocationId(typedDevice.location_id);
+      setOrgId(typedDevice.org_id);
+      loadCurrentSession(typedDevice.org_id, typedDevice.location_id);
     }
   };
 
@@ -177,15 +178,17 @@ export default function KioskPage() {
       return;
     }
 
-    // Create attendance record
-    const { error } = await supabase.from("attendance_records").insert({
-      org_id: orgId,
-      session_id: currentSession.id,
-      person_id: person.id,
-      method: "kiosk",
-      status: "present",
-      device_id: deviceId,
-    });
+    // Create attendance record (cast client to any to work around Supabase typing)
+    const { error } = await (supabase as any)
+      .from("attendance_records")
+      .insert({
+        org_id: orgId,
+        session_id: currentSession.id,
+        person_id: person.id,
+        method: "kiosk",
+        status: "present",
+        device_id: deviceId,
+      });
 
     if (error) {
       setStatus("error");

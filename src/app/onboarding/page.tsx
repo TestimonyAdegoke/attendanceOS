@@ -269,8 +269,8 @@ export default function OnboardingPage() {
         throw new Error("We couldn't link your account to an organization. Please refresh the page or contact support.");
       }
 
-      // Update organization with type and timezone
-      const { error: orgError } = await supabase
+      // Update organization with type and timezone (cast client to any to work around Supabase typing)
+      const { error: orgError } = await (supabase as any)
         .from("organizations")
         .update({
           org_type: formData.orgType || "other",

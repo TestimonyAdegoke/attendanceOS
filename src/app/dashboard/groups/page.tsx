@@ -40,16 +40,17 @@ export default function GroupsPage() {
       .single();
 
     if (membership) {
-      setOrgId(membership.org_id as string);
-      const { data } = await supabase
+      const typedMembership = membership as { org_id: string };
+      setOrgId(typedMembership.org_id);
+      const { data } = await (supabase as any)
         .from("groups")
         .select("*")
-        .eq("org_id", membership.org_id)
+        .eq("org_id", typedMembership.org_id)
         .order("name");
 
-      const enhancedData = data?.map(g => ({
+      const enhancedData = (data as any[] | null)?.map((g: any) => ({
         ...g,
-        member_count: Math.floor(Math.random() * 20)
+        member_count: Math.floor(Math.random() * 20),
       }));
 
       setGroups((enhancedData as Group[]) || []);

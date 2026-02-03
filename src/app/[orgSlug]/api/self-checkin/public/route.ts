@@ -132,7 +132,7 @@ export async function POST(
     }
 
     // Create attendance record
-    const { data: record, error: insertError } = await supabase
+    const { data: record, error: insertError } = await (supabase as any)
       .from("attendance_records")
       .insert({
         org_id: orgId,

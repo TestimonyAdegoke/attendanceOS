@@ -99,7 +99,7 @@ export async function POST(
     const personId = (link as { person_id: string }).person_id;
 
     // Create attendance record
-    const { data: record, error: insertError } = await supabase
+    const { data: record, error: insertError } = await (supabase as any)
       .from("attendance_records")
       .insert({
         org_id: orgId,

@@ -151,8 +151,8 @@ export default function PeopleImportPage() {
     try {
       for (const row of rowsToImport) {
         if (row.status === "update" && row.duplicateOf) {
-          // Update existing record
-          const { error } = await supabase
+          // Update existing record (cast client to any to work around Supabase typing)
+          const { error } = await (supabase as any)
             .from("people")
             .update({
               full_name: row.mappedData.full_name,
@@ -165,8 +165,8 @@ export default function PeopleImportPage() {
           if (error) errorCount++;
           else successCount++;
         } else {
-          // Insert new record
-          const { error } = await supabase
+          // Insert new record (cast client to any to work around Supabase typing)
+          const { error } = await (supabase as any)
             .from("people")
             .insert({
               org_id: orgId,
@@ -175,7 +175,7 @@ export default function PeopleImportPage() {
               phone: row.mappedData.phone || null,
               external_id: row.mappedData.external_id || null,
               status: "active",
-            } as never);
+            });
           
           if (error) errorCount++;
           else successCount++;

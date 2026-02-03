@@ -40,10 +40,10 @@ export default function AttendancePage() {
       .single();
 
     if (membership) {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("attendance_records")
         .select("*, people(full_name, email), sessions(name, session_date)")
-        .eq("org_id", membership.org_id)
+        .eq("org_id", (membership as { org_id: string }).org_id)
         .gte("checked_in_at", `${dateFilter}T00:00:00`)
         .lte("checked_in_at", `${dateFilter}T23:59:59`)
         .order("checked_in_at", { ascending: false });

@@ -125,7 +125,8 @@ export function SeriesDialog({
       if (rule.options.freq === RRule.DAILY) frequency = "daily";
       else if (rule.options.freq === RRule.MONTHLY) frequency = "monthly";
 
-      const weekdays = rule.options.byweekday?.map((d) => (typeof d === "number" ? d : d.weekday)) || [1];
+      const byweekday = rule.options.byweekday as any[] | null | undefined;
+      const weekdays = byweekday?.map((d: any) => (typeof d === "number" ? d : d.weekday)) || [1];
 
       return {
         frequency,
@@ -209,13 +210,13 @@ export function SeriesDialog({
 
     let error;
     if (series) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from("event_series")
         .update(seriesData)
         .eq("id", series.id);
       error = updateError;
     } else {
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from("event_series")
         .insert(seriesData);
       error = insertError;

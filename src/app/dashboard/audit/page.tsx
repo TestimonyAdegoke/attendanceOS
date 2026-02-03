@@ -40,10 +40,10 @@ export default function AuditPage() {
       .single();
 
     if (membership) {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("audit_logs")
         .select("*, profiles:actor_user_id(full_name, email)")
-        .eq("org_id", membership.org_id)
+        .eq("org_id", (membership as { org_id: string }).org_id)
         .order("created_at", { ascending: false })
         .limit(100);
 

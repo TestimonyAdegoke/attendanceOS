@@ -114,9 +114,14 @@ export function SessionDialog({
 
     try {
       if (session) {
-        await supabase.from("sessions").update(sessionData).eq("id", session.id);
+        await (supabase as any)
+          .from("sessions")
+          .update(sessionData)
+          .eq("id", session.id);
       } else {
-        await supabase.from("sessions").insert(sessionData);
+        await (supabase as any)
+          .from("sessions")
+          .insert(sessionData);
       }
       onSuccess();
       onOpenChange(false);

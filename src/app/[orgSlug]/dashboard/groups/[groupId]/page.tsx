@@ -177,7 +177,7 @@ export default function GroupDetailPage() {
     setSaving(true);
     const supabase = createClient();
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("groups")
       .update({
         self_checkin_enabled: selfCheckinEnabled,

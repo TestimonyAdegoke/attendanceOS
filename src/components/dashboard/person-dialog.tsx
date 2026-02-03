@@ -107,7 +107,7 @@ export function PersonDialog({
 
     try {
       if (person) {
-        await supabase
+        await (supabase as any)
           .from("people")
           .update({
             full_name: formData.full_name,
@@ -119,15 +119,17 @@ export function PersonDialog({
           })
           .eq("id", person.id);
       } else {
-        await supabase.from("people").insert({
-          org_id: orgId,
-          full_name: formData.full_name,
-          email: formData.email || null,
-          phone: formData.phone || null,
-          external_id: formData.external_id || null,
-          status: formData.status,
-          attributes: formData.attributes,
-        });
+        await (supabase as any)
+          .from("people")
+          .insert({
+            org_id: orgId,
+            full_name: formData.full_name,
+            email: formData.email || null,
+            phone: formData.phone || null,
+            external_id: formData.external_id || null,
+            status: formData.status,
+            attributes: formData.attributes,
+          });
       }
       onSuccess();
       onOpenChange(false);
