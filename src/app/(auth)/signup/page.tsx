@@ -93,8 +93,8 @@ export default function SignupPage() {
         email: formData.email,
       });
 
-      // Create organization
-      const slug = formData.orgName
+      // Create organization with temporary slug, then update to id+name pattern
+      const baseSlug = formData.orgName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
@@ -103,27 +103,36 @@ export default function SignupPage() {
         .from("organizations") as any)
         .insert({
           name: formData.orgName,
-          slug: slug + "-" + Date.now().toString(36),
+          // Temporary slug to satisfy NOT NULL/unique constraints
+          slug: baseSlug + "-" + Date.now().toString(36),
         })
         .select()
         .single();
 
       if (!orgError && org) {
+        const orgId = (org as { id: string }).id;
+        const finalSlug = `${orgId}-${baseSlug || "org"}`;
+
+        // Update slug to stable id+name format
+        await (supabase.from("organizations") as any)
+          .update({ slug: finalSlug } as never)
+          .eq("id", orgId);
+
         // Create membership as owner
         await (supabase.from("org_memberships") as any).insert({
-          org_id: org.id,
+          org_id: orgId,
           user_id: authData.user.id,
           role: "org_owner",
         });
 
         // Create org plan
         await (supabase.from("org_plans") as any).insert({
-          org_id: org.id,
+          org_id: orgId,
           plan: "starter",
         });
 
         // Store onboarding state
-        localStorage.setItem("onboarding_org_id", org.id);
+        localStorage.setItem("onboarding_org_id", orgId);
         localStorage.setItem("onboarding_started", "true");
       }
     }

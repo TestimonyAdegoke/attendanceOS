@@ -234,6 +234,7 @@ export default function OnboardingPage() {
             .from("organizations")
             .insert({
               name: fallbackName,
+              // Temporary slug; will be replaced with id+name format
               slug: `${baseSlug || "org"}-${Date.now().toString(36)}`,
               org_type: formData.orgType || "other",
             } as never)
@@ -244,11 +245,20 @@ export default function OnboardingPage() {
             throw orgCreateError || new Error("Failed to create organization for your account.");
           }
 
+          const orgId = (org as { id: string }).id;
+          const finalSlug = `${orgId}-${baseSlug || "org"}`;
+
+          // Update slug to stable id+name format
+          await supabase
+            .from("organizations")
+            .update({ slug: finalSlug } as never)
+            .eq("id", orgId);
+
           // Create membership as owner
           const { error: membershipInsertError } = await supabase
             .from("org_memberships")
             .insert({
-              org_id: (org as { id: string }).id,
+              org_id: orgId,
               user_id: user.id,
               role: "org_owner",
             } as never);
@@ -257,7 +267,7 @@ export default function OnboardingPage() {
             throw membershipInsertError;
           }
 
-          currentOrgId = (org as { id: string }).id;
+          currentOrgId = orgId;
         }
 
         if (currentOrgId) {
