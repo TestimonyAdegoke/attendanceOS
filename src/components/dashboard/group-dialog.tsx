@@ -27,7 +27,6 @@ interface GroupDialogProps {
   group?: {
     id: string;
     name: string;
-    description?: string | null;
   } | null;
   onSuccess: () => void;
   orgId: string;
@@ -43,7 +42,6 @@ export function GroupDialog({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [allPeople, setAllPeople] = useState<Person[]>([]);
   const [members, setMembers] = useState<Person[]>([]);
@@ -55,11 +53,9 @@ export function GroupDialog({
       loadPeople();
       if (group) {
         setName(group.name);
-        setDescription(group.description || "");
         loadMembers(group.id);
       } else {
         setName("");
-        setDescription("");
         setMembers([]);
         setOriginalMemberIds([]);
         setSelectedIds(new Set());
@@ -130,13 +126,13 @@ export function GroupDialog({
     if (group) {
       const { error: updateError } = await supabase
         .from("groups")
-        .update({ name, description: description || null } as never)
+        .update({ name } as never)
         .eq("id", group.id);
       error = updateError;
     } else {
       const { data: newGroup, error: insertError } = await supabase
         .from("groups")
-        .insert({ name, description: description || null, org_id: orgId } as never)
+        .insert({ name, org_id: orgId } as never)
         .select("id")
         .single();
       error = insertError;
@@ -210,16 +206,6 @@ export function GroupDialog({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="label">Description</label>
-                <textarea
-                  placeholder="Optional description..."
-                  className="input-field min-h-[80px] resize-none py-2"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
 
