@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
-import { calculateDistanceClient } from "@/lib/checkin-eligibility";
+import { calculateDistance } from "@/lib/checkin-distance";
 import { loadOrgThemeBySlug, applyOrgThemeCssVars } from "@/lib/org-theme";
 import { cn } from "@/lib/utils";
 
@@ -159,7 +159,7 @@ export default function PortalEventPage() {
         const next = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
         setGeo(next);
 
-        const distance = calculateDistanceClient(next.lat, next.lng, event.locations!.lat!, event.locations!.lng!);
+        const distance = calculateDistance(next.lat, next.lng, event.locations!.lat!, event.locations!.lng!);
         const radius = 100;
         setEligibility({
           checking: false,
