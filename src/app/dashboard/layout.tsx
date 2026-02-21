@@ -79,7 +79,7 @@ export default async function DashboardLayout({
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <DashboardHeader user={user} currentOrg={currentOrg} />
       <div className="flex flex-1 overflow-hidden">
-        <DashboardNav />
+        <DashboardNav className="hidden md:block" />
         <main className="flex-1 overflow-y-auto scrollbar-thin bg-surface-1">
           <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
             {children}

@@ -230,12 +230,31 @@ export default function OnboardingPage() {
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/(^-|-$)/g, "");
 
+          const generateUniqueSlug = async (slugBase: string) => {
+            const normalized = slugBase || "org";
+            let candidate = normalized;
+            let suffix = 2;
+
+            while (true) {
+              const { data: existing } = await supabase
+                .from("organizations")
+                .select("id")
+                .eq("slug", candidate)
+                .maybeSingle();
+
+              if (!existing) return candidate;
+              candidate = `${normalized}-${suffix}`;
+              suffix += 1;
+            }
+          };
+
+          const orgSlug = await generateUniqueSlug(baseSlug);
+
           const { data: org, error: orgCreateError } = await supabase
             .from("organizations")
             .insert({
               name: fallbackName,
-              // Temporary slug; will be replaced with id+name format
-              slug: `${baseSlug || "org"}-${Date.now().toString(36)}`,
+              slug: orgSlug,
               org_type: formData.orgType || "other",
             } as never)
             .select()
@@ -246,13 +265,6 @@ export default function OnboardingPage() {
           }
 
           const orgId = (org as { id: string }).id;
-          const finalSlug = `${orgId}-${baseSlug || "org"}`;
-
-          // Update slug to stable id+name format
-          await supabase
-            .from("organizations")
-            .update({ slug: finalSlug } as never)
-            .eq("id", orgId);
 
           // Create membership as owner
           const { error: membershipInsertError } = await supabase

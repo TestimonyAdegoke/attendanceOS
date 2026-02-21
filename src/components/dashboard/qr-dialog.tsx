@@ -27,9 +27,17 @@ export function QRCodeDialog({ open, onOpenChange, person }: QRCodeDialogProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (open && person && canvasRef.current) {
+    if (!open || !person) return;
+
+    let cancelled = false;
+    const draw = async () => {
+      // Dialog content mounts after open; defer to ensure <canvas> exists.
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      if (cancelled) return;
+      if (!canvasRef.current) return;
+
       const qrData = `attend://person/${person.checkin_code}`;
-      QRCode.toCanvas(canvasRef.current, qrData, {
+      await QRCode.toCanvas(canvasRef.current, qrData, {
         width: 256,
         margin: 2,
         color: {
@@ -37,7 +45,12 @@ export function QRCodeDialog({ open, onOpenChange, person }: QRCodeDialogProps) 
           light: "#ffffff",
         },
       });
-    }
+    };
+
+    draw();
+    return () => {
+      cancelled = true;
+    };
   }, [open, person]);
 
   const handleDownload = () => {

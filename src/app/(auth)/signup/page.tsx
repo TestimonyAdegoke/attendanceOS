@@ -93,30 +93,45 @@ export default function SignupPage() {
         email: formData.email,
       });
 
-      // Create organization with temporary slug, then update to id+name pattern
+      // Create organization with a human-friendly, unique slug based on name
       const baseSlug = formData.orgName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
+      const generateUniqueSlug = async (slugBase: string) => {
+        const normalized = slugBase || "org";
+        let candidate = normalized;
+        let suffix = 2;
+
+        // Try base, then base-2, base-3, ... until available
+        // (kept simple; unique index in DB is still the final authority)
+        while (true) {
+          const { data: existing } = await supabase
+            .from("organizations")
+            .select("id")
+            .eq("slug", candidate)
+            .maybeSingle();
+
+          if (!existing) return candidate;
+          candidate = `${normalized}-${suffix}`;
+          suffix += 1;
+        }
+      };
+
+      const orgSlug = await generateUniqueSlug(baseSlug);
+
       const { data: org, error: orgError } = await (supabase
         .from("organizations") as any)
         .insert({
           name: formData.orgName,
-          // Temporary slug to satisfy NOT NULL/unique constraints
-          slug: baseSlug + "-" + Date.now().toString(36),
+          slug: orgSlug,
         })
         .select()
         .single();
 
       if (!orgError && org) {
         const orgId = (org as { id: string }).id;
-        const finalSlug = `${orgId}-${baseSlug || "org"}`;
-
-        // Update slug to stable id+name format
-        await (supabase.from("organizations") as any)
-          .update({ slug: finalSlug } as never)
-          .eq("id", orgId);
 
         // Create membership as owner
         await (supabase.from("org_memberships") as any).insert({

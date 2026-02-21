@@ -12,17 +12,23 @@ import {
     Monitor,
     BarChart3,
     Settings,
+    Building,
+    Palette,
+    BadgeCheck,
     Shield,
     Activity,
+    Repeat,
     ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DashboardNavProps {
     orgSlug?: string;
+    className?: string;
+    onNavigate?: () => void;
 }
 
-function getNavSections(basePath: string) {
+export function getNavSections(basePath: string) {
     return [
         {
             title: "Overview",
@@ -42,6 +48,7 @@ function getNavSections(basePath: string) {
             title: "Attendance",
             items: [
                 { href: `${basePath}/calendar`, label: "Calendar", icon: CalendarDays },
+                { href: `${basePath}/series`, label: "Series", icon: Repeat },
                 { href: `${basePath}/sessions`, label: "Sessions", icon: Activity },
                 { href: `${basePath}/attendance`, label: "Records", icon: ClipboardCheck },
             ],
@@ -55,21 +62,45 @@ function getNavSections(basePath: string) {
         {
             title: "Settings",
             items: [
+                {
+                    label: "Organization",
+                    href: `${basePath}/settings`,
+                    icon: Building,
+                },
+                {
+                    label: "Appearance",
+                    href: `${basePath}/settings/appearance`,
+                    icon: Palette,
+                },
+                {
+                    label: "Badge Designer",
+                    href: `${basePath}/settings/badge-designer`,
+                    icon: BadgeCheck,
+                },
+                {
+                    label: "Team",
+                    href: `${basePath}/users`,
+                    icon: Users,
+                },
                 { href: `${basePath}/devices`, label: "Kiosks", icon: Monitor },
-                { href: `${basePath}/users`, label: "Team", icon: Shield },
                 { href: `${basePath}/settings`, label: "Settings", icon: Settings },
             ],
         },
     ];
 }
 
-export function DashboardNav({ orgSlug }: DashboardNavProps) {
+export function DashboardNav({ orgSlug, className, onNavigate }: DashboardNavProps) {
     const pathname = usePathname();
     const basePath = orgSlug ? `/${orgSlug}/dashboard` : "/dashboard";
     const navSections = getNavSections(basePath);
 
     return (
-        <nav className="w-56 shrink-0 border-r border-border bg-surface-1 h-full overflow-y-auto scrollbar-thin">
+        <nav
+            className={cn(
+                "w-56 shrink-0 border-r border-border bg-surface-1 h-full overflow-y-auto scrollbar-thin",
+                className
+            )}
+        >
             <div className="p-4 space-y-6">
                 {navSections.map((section) => (
                     <div key={section.title}>
@@ -90,6 +121,7 @@ export function DashboardNav({ orgSlug }: DashboardNavProps) {
                                                 "nav-item",
                                                 isActive && "nav-item-active"
                                             )}
+                                            onClick={onNavigate}
                                         >
                                             <item.icon className="h-4 w-4" />
                                             <span className="flex-1">{item.label}</span>

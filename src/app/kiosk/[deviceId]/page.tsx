@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { QRScanner } from "@/components/kiosk/qr-scanner";
+import { applyBrandingCssVars, normalizeBranding, type OrgBranding } from "@/lib/org-branding";
 
 interface Person {
   id: string;
@@ -38,6 +39,10 @@ export default function KioskPage() {
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [locationId, setLocationId] = useState<string | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState<string>("Attend Kiosk");
+  const [branding, setBranding] = useState<OrgBranding>(() =>
+    normalizeBranding({ primary: "#4f46e5", accent: "#06b6d4", logoUrl: null })
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,6 +82,26 @@ export default function KioskPage() {
       const typedDevice = device as { location_id: string; org_id: string };
       setLocationId(typedDevice.location_id);
       setOrgId(typedDevice.org_id);
+
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("id, name, brand_primary, brand_accent, brand_logo_url")
+        .eq("id", typedDevice.org_id)
+        .single();
+
+      if (org) {
+        const typedOrg = org as any;
+        setOrgName(typedOrg.name || "Attend Kiosk");
+        const normalized = normalizeBranding({
+          primary: typedOrg.brand_primary,
+          accent: typedOrg.brand_accent,
+          logoUrl: typedOrg.brand_logo_url,
+          orgName: typedOrg.name,
+        });
+        setBranding(normalized);
+        applyBrandingCssVars(normalized);
+      }
+
       loadCurrentSession(typedDevice.org_id, typedDevice.location_id);
     }
   };
@@ -231,10 +256,15 @@ export default function KioskPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div
+      className="min-h-screen bg-background flex flex-col"
+      style={{
+        backgroundImage: `radial-gradient(1200px circle at 20% 0%, ${branding.accent}22, transparent 55%), radial-gradient(1200px circle at 80% 0%, ${branding.primary}22, transparent 55%)`,
+      }}
+    >
       <header className="border-b p-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Attend Kiosk</h1>
+          <h1 className="text-2xl font-bold">{orgName}</h1>
           {currentSession ? (
             <p className="text-muted-foreground">{currentSession.name}</p>
           ) : (

@@ -11,6 +11,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { LocationDialog } from "@/components/dashboard/location-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface Location {
   id: string;
@@ -30,6 +37,13 @@ export default function OrgLocationsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
+
+  const handleDeleteLocation = async (locationId: string) => {
+    if (!confirm("Are you sure you want to delete this location?")) return;
+    const supabase = createClient();
+    await supabase.from("locations").delete().eq("id", locationId);
+    loadLocations();
+  };
 
   const loadLocations = async () => {
     const supabase = createClient();
@@ -201,9 +215,30 @@ export default function OrgLocationsPage() {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedLocation(location);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDeleteLocation(location.id)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>

@@ -50,6 +50,14 @@ export function DeviceDialog({
     status: "active",
   });
 
+  const sha256Hex = async (value: string) => {
+    const enc = new TextEncoder();
+    const digest = await crypto.subtle.digest("SHA-256", enc.encode(value));
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  };
+
   useEffect(() => {
     if (open) {
       loadLocations();
@@ -92,16 +100,32 @@ export function DeviceDialog({
       return;
     }
 
+    if (!form.location_id) {
+      toast({
+        title: "Missing location",
+        description: "Please assign this device to a location",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     const supabase = createClient();
 
-    const deviceData = {
+    const deviceData: Record<string, any> = {
       name: form.name,
       type: form.type,
-      location_id: form.location_id || null,
+      location_id: form.location_id,
       status: form.status,
       org_id: orgId,
     };
+
+    // devices.api_key_hash is required in the DB schema.
+    // For now we generate a random token and store its SHA-256 hash.
+    if (!device) {
+      const rawToken = crypto.randomUUID();
+      deviceData.api_key_hash = await sha256Hex(rawToken);
+    }
 
     let error;
     if (device) {
@@ -221,7 +245,7 @@ export function DeviceDialog({
               onChange={(e) => setForm({ ...form, location_id: e.target.value })}
               className="input-field h-10"
             >
-              <option value="">No location assigned</option>
+              <option value="">Select location...</option>
               {locations.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}

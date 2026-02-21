@@ -1,17 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Plus, Calendar, Clock, MapPin, RefreshCw, Search,
   CalendarDays, Play, CheckCircle2, XCircle, MoreHorizontal,
   Pencil, Users
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { SessionDialog } from "@/components/dashboard/session-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Session {
   id: string;
@@ -27,6 +35,7 @@ interface Session {
 export default function OrgSessionsPage() {
   const params = useParams();
   const orgSlug = params.orgSlug as string;
+  const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -76,6 +85,13 @@ export default function OrgSessionsPage() {
   const filteredSessions = sessions.filter(
     (s) => s.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleDelete = async (sessionId: string) => {
+    if (!confirm("Delete this session? This cannot be undone.")) return;
+    const supabase = createClient();
+    await supabase.from("sessions").delete().eq("id", sessionId);
+    await loadSessions();
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -208,7 +224,18 @@ export default function OrgSessionsPage() {
                 isToday(session.session_date) ? "ring-2 ring-primary/50" : ""
               }`}
             >
-              <CardContent className="p-4">
+              <CardContent
+                className="p-4 cursor-pointer"
+                onClick={() => router.push(`/${orgSlug}/dashboard/sessions/${session.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/${orgSlug}/dashboard/sessions/${session.id}`);
+                  }
+                }}
+              >
                 <div className="flex items-center gap-4">
                   {/* Date Badge */}
                   <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl ${
@@ -276,16 +303,72 @@ export default function OrgSessionsPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 rounded-lg"
-                      onClick={() => { setSelectedSession(session); setDialogOpen(true); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSession(session);
+                        setDialogOpen(true);
+                      }}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <Users className="h-4 w-4" />
+                    <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                      <Link
+                        href={`/${orgSlug}/dashboard/sessions/${session.id}`}
+                        aria-label="Assign attendees"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Users className="h-4 w-4" />
+                      </Link>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/${orgSlug}/dashboard/sessions/${session.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View details
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedSession(session);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/${orgSlug}/dashboard/sessions/${session.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Assign attendees
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(session.id);
+                          }}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>

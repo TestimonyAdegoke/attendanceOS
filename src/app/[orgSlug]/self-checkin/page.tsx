@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { applyBrandingCssVars, normalizeBranding, type OrgBranding } from "@/lib/org-branding";
 
 interface Session {
   id: string;
@@ -72,6 +73,10 @@ export default function SelfCheckinPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState<string>("Self Check-in");
+  const [branding, setBranding] = useState<OrgBranding>(() =>
+    normalizeBranding({ primary: "#4f46e5", accent: "#06b6d4", logoUrl: null })
+  );
   
   // Identification
   const [identifierType, setIdentifierType] = useState<"phone" | "code">("phone");
@@ -96,7 +101,7 @@ export default function SelfCheckinPage() {
 
     const { data: org } = await supabase
       .from("organizations")
-      .select("id")
+      .select("id, name, brand_primary, brand_accent, brand_logo_url")
       .eq("slug", orgSlug)
       .single();
 
@@ -105,7 +110,17 @@ export default function SelfCheckinPage() {
       return;
     }
 
-    setOrgId((org as { id: string }).id);
+    const typedOrg = org as any;
+    setOrgId(typedOrg.id);
+    setOrgName(typedOrg.name || "Self Check-in");
+    const normalized = normalizeBranding({
+      primary: typedOrg.brand_primary,
+      accent: typedOrg.brand_accent,
+      logoUrl: typedOrg.brand_logo_url,
+      orgName: typedOrg.name,
+    });
+    setBranding(normalized);
+    applyBrandingCssVars(normalized);
 
     // Get today's active sessions
     const now = new Date();
@@ -118,7 +133,7 @@ export default function SelfCheckinPage() {
         id, name, session_date, start_at, end_at, public_code, status,
         locations (id, name, lat, lng)
       `)
-      .eq("org_id", (org as { id: string }).id)
+      .eq("org_id", (typedOrg as { id: string }).id)
       .gte("start_at", todayStart)
       .lt("start_at", todayEnd)
       .in("status", ["scheduled", "active"])
@@ -246,15 +261,30 @@ export default function SelfCheckinPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-cyan-500/5">
+    <div
+      className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-cyan-500/5"
+      style={{
+        // Used by a few UI accents without requiring Tailwind config changes
+        backgroundImage: `radial-gradient(800px circle at 20% 0%, ${branding.accent}22, transparent 50%), radial-gradient(800px circle at 80% 0%, ${branding.primary}22, transparent 50%)`,
+      }}
+    >
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b">
         <div className="container max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 rounded-xl bg-gradient-to-br from-primary to-cyan-500 text-white">
+            <div
+              className="p-1.5 rounded-xl text-white overflow-hidden"
+              style={{ backgroundImage: `linear-gradient(135deg, ${branding.primary}, ${branding.accent})` }}
+            >
               <Fingerprint className="h-5 w-5" />
             </div>
-            <span className="font-bold">Self Check-in</span>
+            <div className="flex items-center gap-2">
+              {branding.logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={branding.logoUrl} alt={orgName} className="h-6 w-6 rounded object-cover" />
+              )}
+              <span className="font-bold">{orgName}</span>
+            </div>
           </div>
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/${orgSlug}/portal`}>Portal</Link>

@@ -33,7 +33,7 @@ interface SeriesDialogProps {
     end_date: string | null;
     start_time: string;
     end_time: string;
-    location_id: string | null;
+    location_ids?: string[] | null;
   } | null;
   onSuccess: () => void;
   orgId: string;
@@ -79,6 +79,9 @@ export function SeriesDialog({
       loadLocations();
       if (series) {
         const parsed = parseRRule(series.recurrence_rule);
+        const firstLocationId = (series.location_ids && series.location_ids.length > 0)
+          ? series.location_ids[0]
+          : "";
         setForm({
           name: series.name,
           description: series.description || "",
@@ -89,7 +92,7 @@ export function SeriesDialog({
           end_date: series.end_date || "",
           start_time: series.start_time,
           end_time: series.end_time,
-          location_id: series.location_id || "",
+          location_id: firstLocationId,
         });
       } else {
         setForm({
@@ -162,6 +165,53 @@ export function SeriesDialog({
     const rule = new RRule(options as ConstructorParameters<typeof RRule>[0]);
     return rule.toString();
   };
+    const locationId = form.location_id;
+
+  const generateSessionsForSeries = async (seriesId: string, seriesName: string, rrule: string) => {
+    const supabase = createClient();
+
+    // Generate occurrences from start_date up to end_date, or up to 90 days ahead if no end date.
+    const startDate = new Date(form.start_date);
+    const untilDate = form.end_date
+      ? new Date(form.end_date)
+      : new Date(new Date(form.start_date).getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    const rule = RRule.fromString(rrule);
+    const occurrences = rule.between(startDate, untilDate, true);
+
+    // Replace sessions for this series.
+    await (supabase as any)
+      .from("sessions")
+      .delete()
+      .eq("series_id", seriesId);
+
+    if (occurrences.length === 0) return;
+
+    const sessionRows = occurrences.map((d) => {
+      const yyyyMmDd = d.toISOString().split("T")[0];
+      const startAt = new Date(`${yyyyMmDd}T${form.start_time}:00`);
+      const endAt = new Date(`${yyyyMmDd}T${form.end_time}:00`);
+
+      return {
+        org_id: orgId,
+        series_id: seriesId,
+        name: seriesName,
+        session_date: yyyyMmDd,
+        start_at: startAt.toISOString(),
+        end_at: endAt.toISOString(),
+        status: "scheduled",
+        location_id: locationId,
+      };
+    });
+
+    const { error } = await (supabase as any)
+      .from("sessions")
+      .insert(sessionRows);
+
+    if (error) {
+      throw error;
+    }
+  };
 
   const toggleWeekday = (day: number) => {
     setForm((prev) => ({
@@ -183,6 +233,15 @@ export function SeriesDialog({
       return;
     }
 
+    if (!form.location_id) {
+      toast({
+        title: "Missing location",
+        description: "Please select a location for this series",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (form.frequency === "weekly" && form.weekdays.length === 0) {
       toast({
         title: "No days selected",
@@ -195,48 +254,56 @@ export function SeriesDialog({
     setLoading(true);
     const supabase = createClient();
 
+    const recurrenceRule = buildRRule();
     const seriesData = {
       name: form.name,
       description: form.description || null,
-      recurrence_rule: buildRRule(),
+      recurrence_rule: recurrenceRule,
       start_date: form.start_date,
       end_date: form.end_date || null,
       start_time: form.start_time,
       end_time: form.end_time,
-      location_id: form.location_id || null,
+      location_ids: form.location_id ? [form.location_id] : [],
       org_id: orgId,
       status: "active" as const,
     };
 
-    let error;
-    if (series) {
-      const { error: updateError } = await (supabase as any)
-        .from("event_series")
-        .update(seriesData)
-        .eq("id", series.id);
-      error = updateError;
-    } else {
-      const { error: insertError } = await (supabase as any)
-        .from("event_series")
-        .insert(seriesData);
-      error = insertError;
-    }
+    try {
+      let seriesId = series?.id;
+      if (series) {
+        const { error: updateError } = await (supabase as any)
+          .from("event_series")
+          .update(seriesData)
+          .eq("id", series.id);
+        if (updateError) throw updateError;
+      } else {
+        const { data: inserted, error: insertError } = await (supabase as any)
+          .from("event_series")
+          .insert(seriesData)
+          .select("id")
+          .single();
+        if (insertError) throw insertError;
+        seriesId = (inserted as { id: string }).id;
+      }
 
-    setLoading(false);
+      if (seriesId) {
+        await generateSessionsForSeries(seriesId, form.name, recurrenceRule);
+      }
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
       toast({
         title: "Success",
         description: `Series ${series ? "updated" : "created"} successfully`,
       });
       onSuccess();
       onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to save series",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 

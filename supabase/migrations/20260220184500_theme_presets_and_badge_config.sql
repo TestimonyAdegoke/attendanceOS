@@ -1,0 +1,4 @@
+ALTER TABLE IF EXISTS organization_settings
+  ADD COLUMN IF NOT EXISTS theme_preset TEXT,
+  ADD COLUMN IF NOT EXISTS theme_tokens JSONB,
+  ADD COLUMN IF NOT EXISTS badge_config JSONB;

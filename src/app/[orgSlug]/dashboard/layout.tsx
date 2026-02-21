@@ -56,7 +56,7 @@ export default async function OrgDashboardLayout({
     <div className="min-h-screen bg-background">
       <DashboardHeader user={user} currentOrg={org} />
       <div className="flex">
-        <DashboardNav orgSlug={orgSlug} />
+        <DashboardNav orgSlug={orgSlug} className="hidden md:block" />
         <main className="flex-1 p-6">{children}</main>
       </div>
     </div>

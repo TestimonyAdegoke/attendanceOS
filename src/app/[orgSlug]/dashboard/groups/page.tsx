@@ -4,18 +4,24 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   Plus, UsersRound, RefreshCw, Search, MoreHorizontal,
-  Pencil, Users, Trash2
+  Pencil, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { GroupDialog } from "@/components/dashboard/group-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface Group {
   id: string;
   name: string;
-  description: string | null;
   member_count?: number;
 }
 
@@ -28,6 +34,14 @@ export default function OrgGroupsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm("Are you sure you want to delete this group?")) return;
+    const supabase = createClient();
+    await supabase.from("group_members").delete().eq("group_id", groupId);
+    await supabase.from("groups").delete().eq("id", groupId);
+    loadGroups();
+  };
 
   const loadGroups = async () => {
     const supabase = createClient();
@@ -72,8 +86,7 @@ export default function OrgGroupsPage() {
 
   const filteredGroups = groups.filter(
     (g) =>
-      g.name.toLowerCase().includes(search.toLowerCase()) ||
-      g.description?.toLowerCase().includes(search.toLowerCase())
+      g.name.toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
@@ -190,17 +203,32 @@ export default function OrgGroupsPage() {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedGroup(group);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDeleteGroup(group.id)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
-                
-                {group.description && (
-                  <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
-                    {group.description}
-                  </p>
-                )}
               </CardContent>
             </Card>
           ))}

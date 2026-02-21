@@ -20,6 +20,9 @@ export default function OrgSettingsPage() {
     name: "",
     slug: "",
     timezone: "UTC",
+    brand_primary: "#4f46e5",
+    brand_accent: "#06b6d4",
+    brand_logo_url: "",
   });
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function OrgSettingsPage() {
 
     const { data: orgData, error } = await supabase
       .from("organizations")
-      .select("id, name, slug, timezone")
+      .select("id, name, slug, timezone, brand_primary, brand_accent, brand_logo_url")
       .eq("slug", orgSlug)
       .single();
 
@@ -49,6 +52,9 @@ export default function OrgSettingsPage() {
         name: o.name,
         slug: o.slug,
         timezone: o.timezone || "UTC",
+        brand_primary: o.brand_primary || "#4f46e5",
+        brand_accent: o.brand_accent || "#06b6d4",
+        brand_logo_url: o.brand_logo_url || "",
       });
     }
 
@@ -64,6 +70,9 @@ export default function OrgSettingsPage() {
       .update({
         name: org.name,
         timezone: org.timezone,
+        brand_primary: org.brand_primary,
+        brand_accent: org.brand_accent,
+        brand_logo_url: org.brand_logo_url || null,
       } as never)
       .eq("id", org.id);
 
@@ -84,16 +93,62 @@ export default function OrgSettingsPage() {
 
   const timezones = [
     "UTC",
+    "Africa/Lagos",
+    "Africa/Accra",
+    "Africa/Cairo",
+    "Africa/Johannesburg",
+    "Europe/London",
+    "Europe/Dublin",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Europe/Madrid",
+    "Europe/Rome",
+    "Europe/Amsterdam",
+    "Europe/Stockholm",
+    "Europe/Zurich",
+    "Europe/Warsaw",
+    "Europe/Moscow",
     "America/New_York",
     "America/Chicago",
     "America/Denver",
     "America/Los_Angeles",
-    "Europe/London",
-    "Europe/Paris",
-    "Asia/Tokyo",
+    "America/Toronto",
+    "America/Vancouver",
+    "America/Sao_Paulo",
+    "Asia/Dubai",
+    "Asia/Kolkata",
+    "Asia/Bangkok",
+    "Asia/Singapore",
     "Asia/Shanghai",
+    "Asia/Hong_Kong",
+    "Asia/Seoul",
+    "Asia/Tokyo",
     "Australia/Sydney",
+    "Australia/Perth",
+    "Pacific/Auckland",
   ];
+
+  const formatUtcOffset = (tz: string) => {
+    try {
+      const dtf = new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        timeZoneName: "shortOffset",
+      });
+      const parts = dtf.formatToParts(new Date());
+      const offsetPart = parts.find((p) => p.type === "timeZoneName")?.value;
+      // Usually looks like "GMT+1" / "UTC+1" / "GMT-5".
+      const normalized = offsetPart?.replace("GMT", "UTC") ?? "UTC";
+      // Convert UTC+1 -> UTC+01:00, UTC-5 -> UTC-05:00
+      const match = normalized.match(/UTC([+-])(\d{1,2})(?::(\d{2}))?/);
+      if (!match) return normalized;
+      const sign = match[1];
+      const hh = match[2].padStart(2, "0");
+      const mm = (match[3] ?? "00").padStart(2, "0");
+      return `UTC${sign}${hh}:${mm}`;
+    } catch {
+      return "UTC";
+    }
+  };
 
   if (loading) {
     return (
@@ -163,10 +218,59 @@ export default function OrgSettingsPage() {
             >
               {timezones.map((tz) => (
                 <option key={tz} value={tz}>
-                  {tz}
+                  {tz} ({formatUtcOffset(tz)})
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="label">Brand Primary Color</label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="color"
+                  value={org.brand_primary}
+                  onChange={(e) => setOrg({ ...org, brand_primary: e.target.value })}
+                  className="h-10 w-14 p-1"
+                />
+                <Input
+                  value={org.brand_primary}
+                  onChange={(e) => setOrg({ ...org, brand_primary: e.target.value })}
+                  placeholder="#4f46e5"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="label">Brand Accent Color</label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="color"
+                  value={org.brand_accent}
+                  onChange={(e) => setOrg({ ...org, brand_accent: e.target.value })}
+                  className="h-10 w-14 p-1"
+                />
+                <Input
+                  value={org.brand_accent}
+                  onChange={(e) => setOrg({ ...org, brand_accent: e.target.value })}
+                  placeholder="#06b6d4"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="label">Brand Logo URL</label>
+            <Input
+              value={org.brand_logo_url}
+              onChange={(e) => setOrg({ ...org, brand_logo_url: e.target.value })}
+              placeholder="https://..."
+            />
+            {org.brand_logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={org.brand_logo_url} alt={org.name} className="h-12 w-12 rounded object-cover border" />
+            ) : null}
           </div>
         </div>
 

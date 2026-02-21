@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import QRCode from "qrcode";
 import { useParams, useRouter } from "next/navigation";
 import { 
   ArrowLeft, Mail, Phone, Hash, Calendar, QrCode, 
@@ -21,6 +20,7 @@ import { QRCodeDialog } from "@/components/dashboard/qr-dialog";
 import { PersonDialog } from "@/components/dashboard/person-dialog";
 import { cn } from "@/lib/utils";
 import { getPersonFields } from "@/lib/org-schema";
+import { DigitalBadge } from "@/components/badges/digital-badge";
 
 interface Person {
   id: string;
@@ -49,7 +49,6 @@ interface AttendanceRecord {
 }
 
 interface PersonGroup {
-  id: string;
   group_id: string;
   groups: {
     id: string;
@@ -82,7 +81,6 @@ export default function PersonDetailPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [orgType, setOrgType] = useState<string | null>(null);
-  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const loadPersonData = useCallback(async () => {
     setLoading(true);
@@ -136,7 +134,6 @@ export default function PersonDetailPage() {
       const { data: groupsData } = await supabase
         .from("group_members")
         .select(`
-          id,
           group_id,
           groups (id, name)
         `)
@@ -163,21 +160,6 @@ export default function PersonDetailPage() {
   useEffect(() => {
     loadPersonData();
   }, [loadPersonData]);
-
-  // Generate QR code for badge preview
-  useEffect(() => {
-    if (person && qrCanvasRef.current && !loading) {
-      const qrData = `attendos://checkin/${person.checkin_code}`;
-      QRCode.toCanvas(qrCanvasRef.current, qrData, {
-        width: 128,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#ffffff",
-        },
-      });
-    }
-  }, [person, loading]);
 
   if (loading) {
     return (
@@ -270,9 +252,13 @@ export default function PersonDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setQrDialogOpen(true)}>
+          <Button variant="outline" asChild>
             <QrCode className="mr-2 h-4 w-4" />
-            Badge / QR
+            <Link href={`/${orgSlug}/dashboard/people/${personId}/badge`}>View Badge</Link>
+          </Button>
+          <Button variant="outline" onClick={() => setQrDialogOpen(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            Download QR
           </Button>
           <Button onClick={() => setEditDialogOpen(true)} className="bg-gradient-to-r from-primary to-cyan-500">
             <Pencil className="mr-2 h-4 w-4" />
@@ -392,17 +378,14 @@ export default function PersonDetailPage() {
               <CardHeader>
                 <CardTitle>Digital Badge</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col items-center py-6">
-                <div className="w-32 h-32 bg-white rounded-xl flex items-center justify-center mb-4 border shadow-sm overflow-hidden">
-                  <canvas ref={qrCanvasRef} className="rounded-lg" />
+              <CardContent className="py-6">
+                <DigitalBadge personId={person.id} variant="compact" />
+                <div className="mt-4">
+                  <Button variant="outline" className="w-full" asChild>
+                    <QrCode className="mr-2 h-4 w-4" />
+                    <Link href={`/${orgSlug}/dashboard/people/${personId}/badge`}>Open Full Badge</Link>
+                  </Button>
                 </div>
-                <p className="text-sm text-center text-muted-foreground mb-4">
-                  Unique QR token for secure check-ins
-                </p>
-                <Button variant="outline" className="w-full" onClick={() => setQrDialogOpen(true)}>
-                  <QrCode className="mr-2 h-4 w-4" />
-                  View & Download Badge
-                </Button>
               </CardContent>
             </Card>
 
@@ -425,8 +408,8 @@ export default function PersonDetailPage() {
                   <div className="flex flex-wrap gap-2">
                     {groups.map((g) => (
                       <Link
-                        key={g.id}
-                        href={`/${orgSlug}/dashboard/groups`}
+                        key={g.group_id}
+                        href={`/${orgSlug}/dashboard/groups/${g.group_id}`}
                         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-colors"
                       >
                         <Users className="h-4 w-4 text-primary" />
@@ -460,7 +443,7 @@ export default function PersonDetailPage() {
                 <div className="space-y-3">
                   {groups.map((g) => (
                     <div
-                      key={g.id}
+                      key={g.group_id}
                       className="flex items-center justify-between p-4 rounded-xl border hover:bg-muted/30 transition-colors"
                     >
                       <div className="flex items-center gap-3">

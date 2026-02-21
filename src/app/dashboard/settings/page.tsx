@@ -75,16 +75,60 @@ export default function SettingsPage() {
 
   const timezones = [
     "UTC",
+    "Africa/Lagos",
+    "Africa/Accra",
+    "Africa/Cairo",
+    "Africa/Johannesburg",
+    "Europe/London",
+    "Europe/Dublin",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Europe/Madrid",
+    "Europe/Rome",
+    "Europe/Amsterdam",
+    "Europe/Stockholm",
+    "Europe/Zurich",
+    "Europe/Warsaw",
+    "Europe/Moscow",
     "America/New_York",
     "America/Chicago",
     "America/Denver",
     "America/Los_Angeles",
-    "Europe/London",
-    "Europe/Paris",
-    "Asia/Tokyo",
+    "America/Toronto",
+    "America/Vancouver",
+    "America/Sao_Paulo",
+    "Asia/Dubai",
+    "Asia/Kolkata",
+    "Asia/Bangkok",
+    "Asia/Singapore",
     "Asia/Shanghai",
+    "Asia/Hong_Kong",
+    "Asia/Seoul",
+    "Asia/Tokyo",
     "Australia/Sydney",
+    "Australia/Perth",
+    "Pacific/Auckland",
   ];
+
+  const formatUtcOffset = (tz: string) => {
+    try {
+      const dtf = new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        timeZoneName: "shortOffset",
+      });
+      const parts = dtf.formatToParts(new Date());
+      const offsetPart = parts.find((p) => p.type === "timeZoneName")?.value;
+      const normalized = offsetPart?.replace("GMT", "UTC") ?? "UTC";
+      const match = normalized.match(/UTC([+-])(\d{1,2})(?::(\d{2}))?/);
+      if (!match) return normalized;
+      const sign = match[1];
+      const hh = match[2].padStart(2, "0");
+      const mm = (match[3] ?? "00").padStart(2, "0");
+      return `UTC${sign}${hh}:${mm}`;
+    } catch {
+      return "UTC";
+    }
+  };
 
   if (loading) {
     return (
@@ -113,7 +157,9 @@ export default function SettingsPage() {
       {/* Organization Settings */}
       <Surface variant="elevated" padding="lg">
         <div className="flex items-start gap-4 mb-6">
-          <div className="p-3 rounded-xl bg-primary/10">
+          <div className="p-3 rounded-xl bg-
+                  {tz} (pformarUtcOffset(ti)m)
+                ary/10">
             <Building2 className="h-6 w-6 text-primary" />
           </div>
           <div>

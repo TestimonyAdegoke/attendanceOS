@@ -8,7 +8,7 @@ export interface EligibilityInput {
   sessionId: string;
   personId?: string;
   userId?: string;
-  method: "qr" | "geo" | "event_code";
+  method: "qr" | "geo" | "event_code" | "kiosk";
   lat?: number;
   lng?: number;
   accuracy?: number;
@@ -42,6 +42,7 @@ interface Session {
   group_id: string | null;
   public_code: string;
   event_qr_token: string;
+  allowed_methods: { qr?: boolean; geo?: boolean; kiosk?: boolean; manual?: boolean };
   locations?: {
     id: string;
     lat: number | null;
@@ -85,7 +86,7 @@ export async function computeSelfCheckinEligibility(
   const { data: session, error: sessionError } = await supabase
     .from("sessions")
     .select(`
-      id, org_id, name, start_at, end_at, status, location_id, group_id, public_code, event_qr_token,
+      id, org_id, name, start_at, end_at, status, location_id, group_id, public_code, event_qr_token, allowed_methods,
       locations (id, lat, lng)
     `)
     .eq("id", sessionId)
@@ -97,6 +98,16 @@ export async function computeSelfCheckinEligibility(
   }
 
   const typedSession = session as unknown as Session;
+
+  const methodAllowed =
+    (method === "qr" && typedSession.allowed_methods?.qr !== false) ||
+    (method === "geo" && typedSession.allowed_methods?.geo !== false) ||
+    (method === "event_code" && typedSession.allowed_methods?.manual !== false) ||
+    (method === "kiosk" && typedSession.allowed_methods?.kiosk !== false);
+
+  if (!methodAllowed) {
+    return { allowed: false, reason: "This check-in method is not enabled for this event" };
+  }
 
   // Check session status
   if (typedSession.status === "cancelled") {
@@ -241,7 +252,7 @@ export async function computeSelfCheckinEligibility(
   }
 
   // 5. Validate event code/QR token for public mode
-  if (policy.require_event_code && policy.mode === "public_with_code") {
+  if (method !== "kiosk" && policy.require_event_code && policy.mode === "public_with_code") {
     if (method === "event_code" && eventCode) {
       if (eventCode.toUpperCase() !== typedSession.public_code?.toUpperCase()) {
         return { allowed: false, reason: "Invalid event code. Please check and try again." };
@@ -302,7 +313,88 @@ export async function computeSelfCheckinEligibility(
     return { allowed: false, reason: "Unable to identify member for check-in" };
   }
 
-  // 7. Check group membership if session has a group
+  // 7. Event attendance scopes (event == session)
+  // If any scopes exist for this event, person must match at least one scope.
+  const { data: scopes } = await supabase
+    .from("event_attendance_scopes")
+    .select("scope_type, scope_id")
+    .eq("event_id", sessionId);
+
+  const scopeRows = (scopes as any[]) || [];
+  if (scopeRows.length > 0) {
+    const orgOpen = scopeRows.some((s) => s.scope_type === "org");
+    if (!orgOpen) {
+      const personMatch = scopeRows.some((s) => s.scope_type === "person" && s.scope_id === resolvedPersonId);
+      if (!personMatch) {
+        const groupScopeIds = scopeRows.filter((s) => s.scope_type === "group").map((s) => s.scope_id).filter(Boolean);
+        const cohortScopeIds = scopeRows.filter((s) => s.scope_type === "cohort").map((s) => s.scope_id).filter(Boolean);
+
+        let matched = false;
+
+        if (groupScopeIds.length > 0) {
+          const { data: groupMembership } = await supabase
+            .from("group_members")
+            .select("group_id")
+            .eq("person_id", resolvedPersonId)
+            .in("group_id", groupScopeIds)
+            .limit(1);
+          matched = !!groupMembership && (groupMembership as any[]).length > 0;
+        }
+
+        if (!matched && cohortScopeIds.length > 0) {
+          const { data: cohortMembership } = await supabase
+            .from("cohort_members")
+            .select("cohort_id")
+            .eq("person_id", resolvedPersonId)
+            .in("cohort_id", cohortScopeIds)
+            .limit(1);
+          matched = !!cohortMembership && (cohortMembership as any[]).length > 0;
+        }
+
+        if (!matched) {
+          return { allowed: false, reason: "You are not assigned to this event" };
+        }
+      }
+    }
+  }
+
+  // 8. Enforce explicit session assignments if configured
+  // If a session has any assigned people or groups, only those attendees are eligible.
+  const [{ data: assignedPeople }, { data: assignedGroups }] = await Promise.all([
+    supabase
+      .from("session_people")
+      .select("person_id")
+      .eq("session_id", sessionId),
+    supabase
+      .from("session_groups")
+      .select("group_id")
+      .eq("session_id", sessionId),
+  ]);
+
+  const assignedPeopleIds = new Set(((assignedPeople as any[]) || []).map((r) => r.person_id as string));
+  const assignedGroupIds = ((assignedGroups as any[]) || []).map((r) => r.group_id as string).filter(Boolean);
+  const hasAssignments = assignedPeopleIds.size > 0 || assignedGroupIds.length > 0;
+
+  if (hasAssignments) {
+    if (assignedPeopleIds.has(resolvedPersonId)) {
+      // allowed
+    } else if (assignedGroupIds.length > 0) {
+      const { data: groupMembership } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("person_id", resolvedPersonId)
+        .in("group_id", assignedGroupIds)
+        .limit(1);
+
+      if (!groupMembership || (groupMembership as any[]).length === 0) {
+        return { allowed: false, reason: "You are not assigned to this session" };
+      }
+    } else {
+      return { allowed: false, reason: "You are not assigned to this session" };
+    }
+  }
+
+  // 9. Check group membership if session has a group
   if (typedSession.group_id) {
     const { data: membership } = await supabase
       .from("group_members")
@@ -329,7 +421,7 @@ export async function computeSelfCheckinEligibility(
     }
   }
 
-  // 8. Check for deny override
+  // 10. Check for deny override
   const { data: denyOverride } = await supabase
     .from("self_checkin_access_overrides")
     .select("access, reason")
@@ -347,7 +439,7 @@ export async function computeSelfCheckinEligibility(
     };
   }
 
-  // 9. Check if already checked in
+  // 11. Check if already checked in
   const { data: existingRecord } = await supabase
     .from("attendance_records")
     .select("id")

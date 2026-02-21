@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import QRCode from "qrcode";
 import {
   User,
   QrCode,
@@ -26,6 +25,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { applyBrandingCssVars, normalizeBranding, type OrgBranding } from "@/lib/org-branding";
+import { DigitalBadge } from "@/components/badges/digital-badge";
 
 interface UserProfile {
   id: string;
@@ -72,17 +73,22 @@ interface Organization {
   id: string;
   name: string;
   slug: string;
+  brand_primary?: string | null;
+  brand_accent?: string | null;
+  brand_logo_url?: string | null;
 }
 
 export default function UserPortalPage() {
   const params = useParams();
   const orgSlug = params.orgSlug as string;
-  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [person, setPerson] = useState<PersonRecord | null>(null);
   const [org, setOrg] = useState<Organization | null>(null);
+  const [branding, setBranding] = useState<OrgBranding>(() =>
+    normalizeBranding({ primary: "#4f46e5", accent: "#06b6d4", logoUrl: null })
+  );
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>([]);
   const [activeTab, setActiveTab] = useState("badge");
@@ -111,7 +117,7 @@ export default function UserPortalPage() {
     // Get organization
     const { data: orgData } = await supabase
       .from("organizations")
-      .select("id, name, slug")
+      .select("id, name, slug, brand_primary, brand_accent, brand_logo_url")
       .eq("slug", orgSlug)
       .single();
 
@@ -120,8 +126,18 @@ export default function UserPortalPage() {
       return;
     }
 
-    setOrg(orgData as Organization);
-    const orgId = (orgData as Organization).id;
+    const typedOrg = orgData as Organization;
+    setOrg(typedOrg);
+    const normalized = normalizeBranding({
+      primary: typedOrg.brand_primary || undefined,
+      accent: typedOrg.brand_accent || undefined,
+      logoUrl: typedOrg.brand_logo_url || null,
+      orgName: typedOrg.name,
+    });
+    setBranding(normalized);
+    applyBrandingCssVars(normalized);
+
+    const orgId = typedOrg.id;
 
     // Find person record linked to this user
     const { data: personData } = await supabase
@@ -170,33 +186,9 @@ export default function UserPortalPage() {
     setLoading(false);
   }, [orgSlug]);
 
-  // Generate QR code
-  useEffect(() => {
-    if (person && qrCanvasRef.current) {
-      const qrData = `attendos://checkin/${person.checkin_code}`;
-      QRCode.toCanvas(qrCanvasRef.current, qrData, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#ffffff",
-        },
-      });
-    }
-  }, [person, activeTab]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const handleDownloadQR = () => {
-    if (!qrCanvasRef.current || !person) return;
-    const url = qrCanvasRef.current.toDataURL("image/png");
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${person.full_name.replace(/\s+/g, "_")}_badge.png`;
-    a.click();
-  };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -241,17 +233,33 @@ export default function UserPortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-cyan-500/5">
+    <div
+      className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-cyan-500/5"
+      style={{
+        backgroundImage: `radial-gradient(900px circle at 15% 0%, ${branding.accent}22, transparent 55%), radial-gradient(900px circle at 85% 0%, ${branding.primary}22, transparent 55%)`,
+      }}
+    >
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b">
         <div className="container max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 rounded-xl bg-gradient-to-br from-primary to-cyan-500 text-white">
+            <div
+              className="p-1.5 rounded-xl text-white overflow-hidden"
+              style={{ backgroundImage: `linear-gradient(135deg, ${branding.primary}, ${branding.accent})` }}
+            >
               <Fingerprint className="h-5 w-5" />
             </div>
             <div>
               <span className="font-bold">AttendOS</span>
-              {org && <span className="text-muted-foreground text-sm ml-2">• {org.name}</span>}
+              {org && (
+                <span className="text-muted-foreground text-sm ml-2 inline-flex items-center gap-2">
+                  <span>• {org.name}</span>
+                  {branding.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={branding.logoUrl} alt={org.name} className="h-5 w-5 rounded object-cover" />
+                  )}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -315,24 +323,25 @@ export default function UserPortalPage() {
                 <p className="text-muted-foreground text-center mb-6 max-w-sm">
                   Show this QR code at check-in kiosks or to event staff for quick attendance
                 </p>
-                
-                <div className="bg-white p-6 rounded-2xl shadow-lg mb-6">
-                  <canvas ref={qrCanvasRef} className="rounded-lg" />
+
+                <div className="w-full max-w-xl">
+                  {person ? (
+                    <DigitalBadge personId={person.id} variant="standard" />
+                  ) : (
+                    <div className="text-sm text-muted-foreground text-center">
+                      No person record linked to this account.
+                    </div>
+                  )}
                 </div>
 
-                {person && (
-                  <div className="text-center mb-6">
-                    <p className="font-semibold text-lg">{person.full_name}</p>
-                    <p className="text-sm text-muted-foreground font-mono tracking-wider">
-                      {person.checkin_code}
-                    </p>
-                  </div>
-                )}
-
-                <Button onClick={handleDownloadQR} variant="outline">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Badge
-                </Button>
+                <div className="mt-4 w-full max-w-sm">
+                  <Button asChild variant="outline" className="w-full" disabled={!person}>
+                    <Link href={`/${orgSlug}/portal/profile/badge`}>
+                      <QrCode className="mr-2 h-4 w-4" />
+                      View Full Badge
+                    </Link>
+                  </Button>
+                </div>
 
                 <div className="mt-8 w-full max-w-sm">
                   <Button asChild className="w-full bg-gradient-to-r from-primary to-cyan-500">

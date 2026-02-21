@@ -97,6 +97,11 @@ export function SessionDialog({
       return;
     }
 
+    if (!form.location_id) {
+      toast({ title: "Missing location", description: "Please select a location", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
     const supabase = createClient();
     const startAt = new Date(`${form.session_date}T${form.start_time}:00`);
@@ -107,7 +112,7 @@ export function SessionDialog({
       session_date: form.session_date,
       start_at: startAt.toISOString(),
       end_at: endAt.toISOString(),
-      location_id: form.location_id || null,
+      location_id: form.location_id,
       org_id: orgId,
       status: "scheduled" as const,
     };
@@ -190,7 +195,7 @@ export function SessionDialog({
                 onChange={(e) => setForm({ ...form, location_id: e.target.value })}
                 className="input-field h-10"
               >
-                <option value="">No location</option>
+                <option value="">Select location...</option>
                 {locations.map((loc) => (
                   <option key={loc.id} value={loc.id}>{loc.name}</option>
                 ))}

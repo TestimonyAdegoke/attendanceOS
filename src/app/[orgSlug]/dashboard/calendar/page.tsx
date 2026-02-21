@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { SessionDialog } from "@/components/dashboard/session-dialog";
 
 interface Session {
   id: string;
@@ -35,7 +36,7 @@ interface Session {
   locations?: {
     name: string;
   } | null;
-  session_series?: {
+  event_series?: {
     name: string;
   } | null;
 }
@@ -57,6 +58,16 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<{
+    id: string;
+    name: string;
+    session_date: string;
+    start_at: string;
+    end_at: string;
+    location_id: string | null;
+  } | null>(null);
 
   // Load sessions
   const loadSessions = useCallback(async () => {
@@ -74,6 +85,8 @@ export default function CalendarPage() {
       return;
     }
 
+    setOrgId((org as any).id);
+
     // Get sessions for current month view (with buffer)
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
     const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0);
@@ -90,7 +103,7 @@ export default function CalendarPage() {
         location_id,
         series_id,
         locations (name),
-        session_series (name)
+        event_series (name)
       `)
       .eq("org_id", (org as any).id)
       .gte("session_date", startOfMonth.toISOString().split("T")[0])
@@ -226,13 +239,14 @@ export default function CalendarPage() {
             Today
           </Button>
           <Button
-            asChild
             className="bg-gradient-to-r from-primary to-cyan-500"
+            onClick={() => {
+              setEditingSession(null);
+              setSessionDialogOpen(true);
+            }}
           >
-            <a href={`/${orgSlug}/dashboard/sessions`}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Session
-            </a>
+            <Plus className="mr-2 h-4 w-4" />
+            New Session
           </Button>
         </div>
       </div>
@@ -343,6 +357,18 @@ export default function CalendarPage() {
                               ? "bg-muted text-muted-foreground"
                               : "bg-amber-500/20 text-amber-700"
                           )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSession({
+                              id: session.id,
+                              name: session.name,
+                              session_date: session.session_date,
+                              start_at: session.start_at,
+                              end_at: session.end_at,
+                              location_id: session.location_id,
+                            });
+                            setSessionDialogOpen(true);
+                          }}
                         >
                           {session.series_id && <Repeat className="inline h-3 w-3 mr-1" />}
                           {session.name}
@@ -468,6 +494,23 @@ export default function CalendarPage() {
                     <Button variant="ghost" size="icon">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingSession({
+                          id: session.id,
+                          name: session.name,
+                          session_date: session.session_date,
+                          start_at: session.start_at,
+                          end_at: session.end_at,
+                          location_id: session.location_id,
+                        });
+                        setSessionDialogOpen(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -475,8 +518,15 @@ export default function CalendarPage() {
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <CalendarIcon className="h-12 w-12 text-muted-foreground/30 mb-4" />
                 <p className="text-muted-foreground">No sessions scheduled for this day</p>
-                <Button variant="link" asChild className="mt-2">
-                  <a href={`/${orgSlug}/dashboard/sessions`}>Create a session</a>
+                <Button
+                  variant="link"
+                  className="mt-2"
+                  onClick={() => {
+                    setEditingSession(null);
+                    setSessionDialogOpen(true);
+                  }}
+                >
+                  Create a session
                 </Button>
               </div>
             )}
@@ -572,6 +622,17 @@ export default function CalendarPage() {
                   <div
                     key={session.id}
                     className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/30 transition-colors"
+                    onClick={() => {
+                      setEditingSession({
+                        id: session.id,
+                        name: session.name,
+                        session_date: session.session_date,
+                        start_at: session.start_at,
+                        end_at: session.end_at,
+                        location_id: session.location_id,
+                      });
+                      setSessionDialogOpen(true);
+                    }}
                   >
                     <div className="p-2 rounded-lg bg-primary/10">
                       <CalendarIcon className="h-5 w-5 text-primary" />
@@ -594,6 +655,14 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
       )}
+
+      <SessionDialog
+        open={sessionDialogOpen}
+        onOpenChange={setSessionDialogOpen}
+        session={editingSession}
+        orgId={orgId || ""}
+        onSuccess={loadSessions}
+      />
     </div>
   );
 }
